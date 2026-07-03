@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
@@ -8,12 +9,71 @@ import LoginPage from '@/components/admin/LoginPage';
 import { ItemProvider } from '@/context/ItemContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { Settings, Gem, LayoutDashboard, LogOut, Package } from 'lucide-react';
+import { Settings, Gem, LayoutDashboard, LogOut, Package, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+function UserMenu() {
+    const { user, logout } = useAuth();
+    const [open, setOpen] = useState(false);
+    const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const openMenu = () => {
+        if (closeTimer.current) clearTimeout(closeTimer.current);
+        setOpen(true);
+    };
+
+    const scheduleClose = () => {
+        if (closeTimer.current) clearTimeout(closeTimer.current);
+        closeTimer.current = setTimeout(() => setOpen(false), 150);
+    };
+
+    const initials = user?.name?.trim()?.charAt(0)?.toUpperCase() ?? 'U';
+
+    return (
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+            <DropdownMenuTrigger asChild onMouseEnter={openMenu} onMouseLeave={scheduleClose}>
+                <Button variant="ghost" className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                        <AvatarFallback>{initials}</AvatarFallback>
+                    </Avatar>
+                    <span className="hidden font-medium sm:inline-block">{user?.name}</span>
+                    <ChevronDown className="h-4 w-4 opacity-60" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+                align="end"
+                className="w-56"
+                onMouseEnter={openMenu}
+                onMouseLeave={scheduleClose}
+            >
+                <DropdownMenuLabel className="flex flex-col gap-0.5">
+                    <span>{user?.name}</span>
+                    <span className="text-xs font-normal text-muted-foreground">{user?.email}</span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                    onSelect={logout}
+                    className="text-destructive focus:text-destructive"
+                >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Đăng xuất
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
 
 function AdminNav() {
     const pathname = usePathname();
-    const { logout } = useAuth();
 
     const navItems = [
         { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -43,10 +103,7 @@ function AdminNav() {
                     ))}
                 </nav>
                 <div className="flex flex-1 items-center justify-end">
-                     <Button variant="ghost" onClick={logout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Đăng xuất
-                    </Button>
+                     <UserMenu />
                 </div>
             </div>
         </header>
